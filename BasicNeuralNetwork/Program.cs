@@ -10,9 +10,9 @@ namespace BasicNeuralNetwork {
         static void Main(string[] args) {
 
             var nn = new NeuralNetwork();
-            nn.AddLayer(2);
-            nn.AddLayer(2);
-            nn.AddLayer(1);
+            nn.AddLayer(2, true);
+            nn.AddLayer(2, true);
+            nn.AddLayer(1, true);
 
             Console.WriteLine("Done");
             Console.Beep();
