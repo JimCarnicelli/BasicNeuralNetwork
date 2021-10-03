@@ -1,5 +1,8 @@
-﻿using System;
-namespace CodingBackProp {
+﻿// From essay by James McCaffrey 08/13/2013
+// https://visualstudiomagazine.com/Articles/2013/08/01/Neural-Network-Back-Propagation-Using-C.aspx
+
+using System;
+namespace MccaffreyCodingBackProp {
     class BackPropProgram {
         public static void xMain(string[] args) {
             Console.WriteLine("\nBegin neural network back-propagation demo");

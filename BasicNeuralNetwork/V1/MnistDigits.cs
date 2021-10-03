@@ -4,7 +4,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 
-namespace BasicNeuralNetwork {
+namespace BasicNeuralNetworkV1 {
     public class MnistDigits : IDisposable {
         private const int imgWidth = 28;
         private const int imgHeight = 28;
@@ -13,7 +13,7 @@ namespace BasicNeuralNetwork {
         private int[] digitOutputs;
         private List<bool> successes = new List<bool>();
 
-        public NeuralNetwork nn;
+        public NeuralNetworkV1 nn;
         public int imgCount;
 
         public void Dispose() {
@@ -35,7 +35,7 @@ namespace BasicNeuralNetwork {
         }
 
         public void StartTraining() {
-            nn = new NeuralNetwork(
+            nn = new NeuralNetworkV1(
                 new int[] {
                     imgWidth * imgHeight,
                     100,
