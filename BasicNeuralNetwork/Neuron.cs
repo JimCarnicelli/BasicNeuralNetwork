@@ -8,11 +8,6 @@ namespace BasicNeuralNetwork {
     class Neuron {
 
         /// <summary>
-        /// The layer I belong to
-        /// </summary>
-        public Layer Layer;
-
-        /// <summary>
         /// The weight I put on each of my inputs when computing my output as my essential learned memory
         /// </summary>
         public float[] InputWeights;
@@ -33,9 +28,8 @@ namespace BasicNeuralNetwork {
         public float Error;
 
         public Neuron(Layer layer) {
-            Layer = layer;
-            if (Layer.PreviousLayer != null) {
-                InputWeights = new float[Layer.PreviousLayer.NeuronCount];
+            if (layer.PreviousLayer != null) {
+                InputWeights = new float[layer.PreviousLayer.NeuronCount];
             }
         }
 
@@ -44,7 +38,7 @@ namespace BasicNeuralNetwork {
         /// </summary>
         public void Randomize(float radius) {
             if (InputWeights != null) {
-                for (int i = 0; i < Layer.PreviousLayer.NeuronCount; i++) {
+                for (int i = 0; i < InputWeights.Length; i++) {
                     InputWeights[i] = NeuralNetwork.NextRandom(-radius, radius);
                 }
             }
