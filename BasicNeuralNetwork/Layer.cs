@@ -56,21 +56,124 @@ namespace BasicNeuralNetwork {
         /// Feed-forward algorithm for this layer
         /// </summary>
         public void FeedForward() {
-            // TODO: Implement
+            foreach (var neuron in Neurons) {
+
+                // Sum up the previous layer's outputs multiplied by this neuron's weights for each
+                float sigma = 0;
+                for (int i = 0; i < PreviousLayer.NeuronCount; i++) {
+                    sigma += PreviousLayer.Neurons[i].Output * neuron.InputWeights[i];
+                }
+                sigma += neuron.Bias;  // Add in each neuron's bias too
+
+                // Shape the output using the activation function
+                float output = ActivationFn(sigma);
+                neuron.Output = output;
+            }
+
+            // The Softmax activation function requires extra processing of aggregates
+            if (ActivationFunction == ActivationFunctionEnum.Softmax) {
+                // Find the max output value
+                float max = float.NegativeInfinity;
+                foreach (var neuron in Neurons) {
+                    if (neuron.Output > max) max = neuron.Output;
+                }
+                // Compute the scale
+                float scale = 0;
+                foreach (var neuron in Neurons) {
+                    scale += (float)Math.Exp(neuron.Output - max);
+                }
+                // Shift and scale the outputs
+                foreach (var neuron in Neurons) {
+                    neuron.Output = (float)Math.Exp(neuron.Output - max) / scale;
+                }
+            }
         }
 
         /// <summary>
-        /// Feed-forward algorithm for this output layer
+        /// Backpropagation algorithm
         /// </summary>
-        public void BackpropagateOutput() {
-            // TODO: Implement
+        public void Backpropagate(float[] trainingOutputs) {
+
+            // Compute error for each neuron
+            for (int n = 0; n < NeuronCount; n++) {
+                var neuron = Neurons[n];
+                float output = neuron.Output;
+
+                if (NextLayer == null) {  // Output layer
+                    var error = trainingOutputs[n] - output;
+                    neuron.Error = error * ActivationFnDerivative(output);
+                } else {  // Hidden layer
+                    float error = 0;
+                    for (int o = 0; o < NextLayer.NeuronCount; o++) {
+                        var nextNeuron = NextLayer.Neurons[o];
+                        var iw = nextNeuron.InputWeights[n];
+                        error += nextNeuron.Error * iw;
+
+                        // TODO: Implement input weight regularization
+                        /*
+                        // Calculate L1 (lasso) for regularization
+                        l1Penalty += (iw < 0 ? -iw : iw);  // Absolute value of the weight
+
+                        // Calculate L2 (weight decay) for regularization
+                        l1Penalty += iw * iw;  // Weight squared
+                        */
+
+                    }
+                    neuron.Error = error * ActivationFnDerivative(output);
+                }
+            }
+
+            // Adjust weights of each neuron
+            for (int n = 0; n < NeuronCount; n++) {
+                var neuron = Neurons[n];
+
+                // Update this neuron's bias
+                var gradient = neuron.Error;
+                neuron.Bias += gradient * LearningRate;
+
+                // Update this neuron's input weights
+                for (int i = 0; i < PreviousLayer.NeuronCount; i++) {
+                    gradient = neuron.Error * PreviousLayer.Neurons[i].Output;
+                    neuron.InputWeights[i] += gradient * LearningRate;
+                }
+            }
+
         }
 
-        /// <summary>
-        /// Feed-forward algorithm for this hidden layer
-        /// </summary>
-        public void BackpropagateHidden() {
-            // TODO: Implement
+        private float ActivationFn(float value) {
+            switch (ActivationFunction) {
+                case ActivationFunctionEnum.ReLU:
+                    if (value < 0) return 0;
+                    return value;
+                case ActivationFunctionEnum.LReLU:
+                    if (value < 0) return value * 0.01f;
+                    return value;
+                case ActivationFunctionEnum.Sigmoid:
+                    return (float)(1 / (1 + Math.Exp(-value)));
+                case ActivationFunctionEnum.TanH:
+                    return (float)Math.Tanh(value);
+                case ActivationFunctionEnum.Softmax:
+                    return value;  // This is only the first part of summing up all the values
+            }
+            return value;
+        }
+
+        private float ActivationFnDerivative(float value) {
+            switch (ActivationFunction) {
+                case ActivationFunctionEnum.ReLU:
+                    if (value > 0) return 1;
+                    return 0;
+                case ActivationFunctionEnum.LReLU:
+                    if (value > 0) return 1;
+                    return 0.01f;
+                case ActivationFunctionEnum.Sigmoid:
+                    return value * (1 - value);
+                case ActivationFunctionEnum.TanH:
+                    return 1 - value * value;
+                case ActivationFunctionEnum.Softmax:
+                    return (1 - value) * value;
+            }
+            return 0;
         }
 
         /// <summary>

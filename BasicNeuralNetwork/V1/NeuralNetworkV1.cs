@@ -359,17 +359,14 @@ namespace BasicNeuralNetworkV1
                 float output = outputs[n];
                 float error = 0;
                 for (int o = 0; o < nextLayer.outputs.Length; o++) {
-                    for (int w = 0; w < neuronCount; w++) {
-                        var iw = nextLayer.inputWeights[o * neuronCount + w];
-                        error += (nextLayer.errors[o] * iw);
+                    var iw = nextLayer.inputWeights[o * neuronCount + n];
+                    error += (nextLayer.errors[o] * iw);
 
-                        // Calculate L1 (lasso) for regularization
-                        l1Penalty += (iw < 0 ? -iw : iw);  // Absolute value of the weight
+                    // Calculate L1 (lasso) for regularization
+                    l1Penalty += (iw < 0 ? -iw : iw);  // Absolute value of the weight
 
-                        // Calculate L2 (weight decay) for regularization
-                        l1Penalty += iw * iw;  // Weight squared
-
-                    }
+                    // Calculate L2 (weight decay) for regularization
+                    l1Penalty += iw * iw;  // Weight squared
                 }
                 error *= ActivationDerivative(output);
                 errors[n] = error;

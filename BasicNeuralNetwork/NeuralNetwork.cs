@@ -58,7 +58,12 @@ namespace BasicNeuralNetwork {
         /// <summary>
         /// Constructs and adds a new neuron layer to .Layers
         /// </summary>
-        public Layer AddLayer(int neuronCount, bool randomize, ActivationFunctionEnum activationFunction = ActivationFunctionEnum.TanH) {
+        public Layer AddLayer(
+            int neuronCount,
+            bool randomize = false,
+            ActivationFunctionEnum activationFunction = ActivationFunctionEnum.TanH,
+            float learningRate = 0.01f
+        ) {
             // Since we can't expand the array we'll construct a new one
             var newLayers = new Layer[LayerCount + 1];
             if (LayerCount > 0) Array.Copy(Layers, newLayers, LayerCount);
@@ -69,6 +74,8 @@ namespace BasicNeuralNetwork {
 
             // Construct the new layer
             var layer = new Layer(neuronCount, previousLayer);
+            layer.ActivationFunction = activationFunction;
+            layer.LearningRate = learningRate;
             if (randomize) layer.Randomize();
             newLayers[LayerCount] = layer;
 
@@ -151,7 +158,6 @@ namespace BasicNeuralNetwork {
         /// Feed .Inputs forward to populate .Outputs
         /// </summary>
         public void FeedForward() {
-            // TODO: Implement
             for (int l = 1; l < LayerCount; l++) {
                 var layer = Layers[l];
                 layer.FeedForward();
@@ -162,7 +168,10 @@ namespace BasicNeuralNetwork {
         /// One iteration of backpropagation training using inputs and training outputs after .Predict() was called on the same
         /// </summary>
         public void Backpropagate() {
-            // TODO: Implement
+            for (int l = LayerCount - 1; l > 0; l--) {
+                var layer = Layers[l];
+                layer.Backpropagate(TrainingOutputs);
+            }
         }
 
         /// <summary>
