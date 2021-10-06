@@ -16,7 +16,7 @@ namespace BasicNeuralNetwork {
         Softmax,
     }
 
-    class NeuralNetwork {
+    public class NeuralNetwork {
 
         /// <summary>
         /// The layers of neurons from input (0) to output (N)
@@ -237,6 +237,9 @@ namespace BasicNeuralNetwork {
         public static float NextRandom(float min, float max) {
             return (float)random.NextDouble() * (max - min) + min;
         }
+        /// <summary>
+        /// Returns a random int that is at least min and less than max
+        /// </summary>
         public static int NextRandomInt(int min, int max) {
             return random.Next(min, max);
         }

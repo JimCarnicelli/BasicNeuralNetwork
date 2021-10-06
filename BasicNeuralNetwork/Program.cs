@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace BasicNeuralNetwork {
     class Program {
@@ -7,13 +8,13 @@ namespace BasicNeuralNetwork {
         static void Main(string[] args) {
 
             //RunXorDemo();
-            RunAsciiDemo();
+            //RunAsciiDemo();
+            RunDigitsDemo();
 
             Console.WriteLine("Done");
-            //Console.Beep();
+            Console.Beep();
             Console.ReadLine();
         }
-
 
 
         static void RunXorDemo() {
@@ -29,8 +30,11 @@ namespace BasicNeuralNetwork {
                 new float[] { 1, 1,   0 },
             };
 
-            int maxIterations = 30000;
+            Console.WriteLine("Iteration     Inputs    Output   Valid?      Accuracy");
+
+            int maxIterations = 1000000;
             var corrects = new List<bool>();
+            int flawlessRuns = 0;
             int i = 0;
             while (i < maxIterations) {
 
@@ -48,42 +52,32 @@ namespace BasicNeuralNetwork {
                 foreach (var correct in corrects) if (correct) percentCorrect += 1;
                 percentCorrect /= corrects.Count;
 
+                if (percentCorrect == 1) flawlessRuns++;
+                else flawlessRuns = 0;
+
                 nn.Backpropagate();
 
-                if (i > 0 && i % 1000 == 0) {
+                if (i % 100 == 0) {
                     #region Output state
 
-                    const int colWidth = 6;
-                    string line = "";
-                    foreach (var neuron in nn.Layers[1].Neurons) {
-                        line += " |";
-                        foreach (var iw in neuron.InputWeights) {
-                            line += RightJustify(iw.ToString("0.00"), colWidth);
-                        }
-                        line += RightJustify(neuron.Bias.ToString("0.00"), colWidth);
-                        line += RightJustify(neuron.Output.ToString("0.00"), colWidth);
-                    }
-                    line += " |";
-                    foreach (var neuron in nn.Layers[2].Neurons) {
-                        line += "|";
-                        foreach (var iw in neuron.InputWeights) {
-                            line += RightJustify(iw.ToString("0.00"), colWidth);
-                        }
-                        line += RightJustify(neuron.Bias.ToString("0.00"), colWidth);
-                        line += RightJustify(neuron.Output.ToString("0.00"), colWidth);
-                    }
-
                     Console.WriteLine(
-                        RightJustify("" + i, 7) +
-                        line + "  >" +
-                        RightJustify("" + nn.InputLayer.Neurons[0].Output, 2) +
-                        RightJustify("" + nn.InputLayer.Neurons[1].Output, 2) +
-                        " : " +
-                        (isCorrect ? "Y" : "N") +
-                        RightJustify((percentCorrect * 100).ToString("0.0") + "%", 8)
+                        RightJustify(i.ToString("#,##0"), 9) + "    " +
+                        trainingData[0] +
+                        " xor " +
+                        trainingData[1] + " = " +
+                        RightJustify("" + nn.OutputLayer.Neurons[0].Output.ToString("0.000"), 7) + "  " +
+                        (isCorrect ? "       " : "(wrong)") +
+                        RightJustify((percentCorrect * 100).ToString("0.0") + "% ", 12) +
+                        RenderPercent(percentCorrect * 100)
                     );
 
                     #endregion
+                }
+
+                if (flawlessRuns == 1000) {
+                    Console.WriteLine("I've had " + flawlessRuns.ToString("#,##0") + " flawless predictions recently. Continue anyway?");
+                    Console.Beep();
+                    Console.ReadLine();
                 }
 
                 i++;
@@ -91,23 +85,22 @@ namespace BasicNeuralNetwork {
         }
 
 
+        #region ASCII character demo
+
 
         static void RunAsciiDemo() {
             NeuralNetwork nn;
 
-            /*
-            const bool loadFromFile = false;
+            const bool loadFromFile = true;
             var filePath = DataDirectory() + "/Character Neural Network.json";
 
             if (loadFromFile && File.Exists(filePath)) {
                 var json = File.ReadAllText(filePath);
-                nn = new NeuralNetworkV1(json, true);
-
+                nn = new NeuralNetwork();
+                nn.FromJson(json);
             } else {
                 nn = NewCharacterNn();
             }
-            */
-            nn = NewCharacterNn();
 
             var recentTestResults = new List<bool>();
             var keepGoing = false;
@@ -214,6 +207,7 @@ namespace BasicNeuralNetwork {
                     Console.WriteLine("Stable at 100% success for a while. Continue anyway?");
                     Console.Beep();
                     Console.ReadLine();
+                    File.WriteAllText(filePath, nn.ToJson());
                     keepGoing = true;
                     keepTraining = false;
                     i = 0;
@@ -224,7 +218,7 @@ namespace BasicNeuralNetwork {
                 i++;
             }
 
-            //File.WriteAllText(filePath, nn.ToJson());
+            File.WriteAllText(filePath, nn.ToJson());
         }
 
         static NeuralNetwork NewCharacterNn() {
@@ -290,6 +284,130 @@ namespace BasicNeuralNetwork {
         }
 
 
+        #endregion
+
+
+        #region Digit image recognition demo
+
+
+        static void RunDigitsDemo() {
+            var mnist = new MnistDigits();
+            mnist.LoadImage(Environment.CurrentDirectory + "/Mnist images/Training images.png");
+
+            var mnistTest = new MnistDigits();
+            mnistTest.LoadImage(Environment.CurrentDirectory + "/Mnist images/Test images.png");
+
+            mnist.StartTraining();
+
+            const int maxIterations = 1000000;
+            int i = 0;
+            float bestPercentCorrect = 0;
+            float bestOfBestPercentCorrect = 0;
+            float hundredPercentInARow = 0;
+            DateTime lastDisplayedAt = DateTime.MinValue;
+
+            while (i < maxIterations) {
+                int imgIndex = NeuralNetwork.NextRandomInt(0, mnist.imgCount);
+                mnist.TrainIteration(imgIndex);
+
+                float percentCorrect = mnist.PercentCorrect();
+
+                if (DateTime.Now.Subtract(lastDisplayedAt).TotalSeconds >= 0.5) {
+                    lastDisplayedAt = DateTime.Now;
+                    Console.WriteLine(
+                        RightJustify(i.ToString("#,##0"), 9) +
+                        RightJustify((percentCorrect * 100).ToString("0.0") + "% ", 12) +
+                        RenderPercent(percentCorrect * 100)
+                    );
+                }
+
+                if (i > 100) {
+                    if (percentCorrect > bestPercentCorrect) {
+                        bestPercentCorrect = percentCorrect;
+                        if (bestPercentCorrect > bestOfBestPercentCorrect) {
+                            bestOfBestPercentCorrect = bestPercentCorrect;
+                        }
+                    }
+
+                    if (percentCorrect == 100) {
+                        hundredPercentInARow++;
+                    } else {
+                        hundredPercentInARow = 0;
+                    }
+                    if (hundredPercentInARow > 1000) {
+                        Console.WriteLine("100% correct for past 1k iterations at " + DateTime.Now.ToString());
+                        Console.Beep();
+
+                        string json = mnist.nn.ToJson();
+                        var filePath = DataDirectory() + "/MNIST digits neural network.json";
+                        File.WriteAllText(filePath, json);
+
+                        mnistTest.nn = new NeuralNetwork();
+                        mnistTest.nn.FromJson(json);
+                        mnistTest.StartTesting();
+                        for (int j = 0; j < mnistTest.imgCount; j++) {
+                            mnistTest.TestIteration(j);
+                        }
+                        percentCorrect = mnistTest.PercentCorrect();
+                        Console.WriteLine("Tested against test set: " + (100 * percentCorrect).ToString("0.0") + "% correct.");
+
+                        Console.Beep();
+                        Console.ReadLine();
+                    }
+                }
+
+                if (i > 1000 && percentCorrect < bestPercentCorrect * 0.7) {
+                    Console.WriteLine("Dropped by 30% from best (" + (100 * percentCorrect).ToString("0.0") + "%). Restarting.");
+                    Console.WriteLine("Best of best: " + (100 * bestOfBestPercentCorrect).ToString("0.0") + "%");
+                    //Console.Beep();
+                    mnist.StartTraining();
+                    bestPercentCorrect = 0;
+                    i = 0;
+                }
+
+                if (i == maxIterations - 1 && percentCorrect < 0.90f) {
+                    Console.WriteLine("Still below 90%. Restarting.");
+                    Console.WriteLine("Best of best: " + (100 * bestOfBestPercentCorrect).ToString("0.0") + "%");
+                    //Console.Beep();
+                    mnist.StartTraining();
+                    bestPercentCorrect = 0;
+                    i = 0;
+                }
+
+                i++;
+            }
+
+            /*
+            mnist.ConvertImage(
+                Environment.CurrentDirectory + "/Mnist images/train-images.idx3-ubyte",
+                Environment.CurrentDirectory + "/Mnist images/train-labels.idx1-ubyte",
+                Environment.CurrentDirectory + "/Mnist images/Training images.png",
+                60000,
+                300
+            );
+            mnist.ConvertImage(
+                Environment.CurrentDirectory + "/Mnist images/t10k-images.idx3-ubyte",
+                Environment.CurrentDirectory + "/Mnist images/t10k-labels.idx1-ubyte",
+                Environment.CurrentDirectory + "/Mnist images/Test images.png",
+                10000,
+                100
+            );
+            */
+
+            mnist.Dispose();
+        }
+
+
+        #endregion
+
+
+        static string DataDirectory() {
+            string path = Environment.CurrentDirectory + "/Data/";
+            if (!Directory.Exists(path)) {
+                Directory.CreateDirectory(path);
+            }
+            return path;
+        }
 
         static string RenderPercent(float percent) {
             float value = percent / 10f;

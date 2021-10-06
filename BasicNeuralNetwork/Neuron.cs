@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace BasicNeuralNetwork {
-    class Neuron {
+    public class Neuron {
 
         /// <summary>
         /// The weight I put on each of my inputs when computing my output as my essential learned memory

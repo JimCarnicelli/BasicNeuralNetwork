@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace BasicNeuralNetwork {
-    class Layer {
+    public class Layer {
 
         /// <summary>
         /// All the neurons in this layer
@@ -22,8 +22,14 @@ namespace BasicNeuralNetwork {
         /// </summary>
         public Layer NextLayer;
 
+        /// <summary>
+        /// A tunable parameter that trades shorter training times for greater final accuracy
+        /// </summary>
         public float LearningRate = 0.01f;
 
+        /// <summary>
+        /// How to transform the summed-up scalar output value of each neuron during feed forward
+        /// </summary>
         public ActivationFunctionEnum ActivationFunction = ActivationFunctionEnum.TanH;
 
         /// <summary>
