@@ -46,7 +46,7 @@ namespace BasicNeuralNetwork {
                 nn.FromJson(json);
             } else {
                 nn.AddLayer(imgWidth * imgHeight);  // One input per pixel
-                nn.AddLayer(50, true, ActivationFunctionEnum.TanH, 0.01f);
+                nn.AddLayer(200, true, ActivationFunctionEnum.TanH, 0.01f);
                 nn.AddLayer(10, true, ActivationFunctionEnum.TanH, 0.01f);  // Digits 0 - 9
             }
 
