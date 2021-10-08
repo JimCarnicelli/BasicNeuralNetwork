@@ -9,7 +9,8 @@ namespace BasicNeuralNetwork {
 
             //RunXorDemo();
             //RunAsciiDemo();
-            RunDigitsDemo();
+            RunDigitsTraining();
+            //RunDigitsTest();
 
             Console.WriteLine("Done");
             Console.Beep();
@@ -290,14 +291,15 @@ namespace BasicNeuralNetwork {
         #region Digit image recognition demo
 
 
-        static void RunDigitsDemo() {
+        static string digitsDemoFilePath = DataDirectory() + "/MNIST digits neural network.json";
+
+        static void RunDigitsTraining() {
             var mnist = new MnistDigits();
             mnist.LoadImage(Environment.CurrentDirectory + "/Mnist images/Training images.png");
 
-            var mnistTest = new MnistDigits();
-            mnistTest.LoadImage(Environment.CurrentDirectory + "/Mnist images/Test images.png");
+            bool loadFromFile = false;
 
-            mnist.StartTraining();
+            mnist.StartTraining(loadFromFile, digitsDemoFilePath);
 
             const int maxIterations = 1000000;
             int i = 0;
@@ -339,17 +341,9 @@ namespace BasicNeuralNetwork {
                         Console.Beep();
 
                         string json = mnist.nn.ToJson();
-                        var filePath = DataDirectory() + "/MNIST digits neural network.json";
-                        File.WriteAllText(filePath, json);
+                        File.WriteAllText(digitsDemoFilePath, json);
 
-                        mnistTest.nn = new NeuralNetwork();
-                        mnistTest.nn.FromJson(json);
-                        mnistTest.StartTesting();
-                        for (int j = 0; j < mnistTest.imgCount; j++) {
-                            mnistTest.TestIteration(j);
-                        }
-                        percentCorrect = mnistTest.PercentCorrect();
-                        Console.WriteLine("Tested against test set: " + (100 * percentCorrect).ToString("0.0") + "% correct.");
+                        RunDigitsTest();
 
                         Console.Beep();
                         Console.ReadLine();
@@ -360,7 +354,7 @@ namespace BasicNeuralNetwork {
                     Console.WriteLine("Dropped by 30% from best (" + (100 * percentCorrect).ToString("0.0") + "%). Restarting.");
                     Console.WriteLine("Best of best: " + (100 * bestOfBestPercentCorrect).ToString("0.0") + "%");
                     //Console.Beep();
-                    mnist.StartTraining();
+                    mnist.StartTraining(false, null);
                     bestPercentCorrect = 0;
                     i = 0;
                 }
@@ -369,12 +363,18 @@ namespace BasicNeuralNetwork {
                     Console.WriteLine("Still below 90%. Restarting.");
                     Console.WriteLine("Best of best: " + (100 * bestOfBestPercentCorrect).ToString("0.0") + "%");
                     //Console.Beep();
-                    mnist.StartTraining();
+                    mnist.StartTraining(false, null);
                     bestPercentCorrect = 0;
                     i = 0;
                 }
 
                 i++;
+            }
+
+            {
+                string json = mnist.nn.ToJson();
+                File.WriteAllText(digitsDemoFilePath, json);
+                RunDigitsTest();
             }
 
             /*
@@ -395,6 +395,21 @@ namespace BasicNeuralNetwork {
             */
 
             mnist.Dispose();
+        }
+
+        static void RunDigitsTest() {
+            var mnistTest = new MnistDigits();
+            mnistTest.LoadImage(Environment.CurrentDirectory + "/Mnist images/Test images.png");
+            mnistTest.nn = new NeuralNetwork();
+
+            string json = File.ReadAllText(digitsDemoFilePath);
+            mnistTest.nn.FromJson(json);
+            mnistTest.StartTesting();
+            for (int j = 0; j < mnistTest.imgCount; j++) {
+                mnistTest.TestIteration(j);
+            }
+            var percentCorrect = mnistTest.PercentCorrect();
+            Console.WriteLine("Tested against test set: " + (100 * percentCorrect).ToString("0.0") + "% correct.");
         }
 
 
