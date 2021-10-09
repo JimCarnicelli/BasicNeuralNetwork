@@ -41,13 +41,18 @@ namespace BasicNeuralNetwork {
         public void StartTraining(bool loadFromFile, string filePath) {
             nn = new NeuralNetwork();
 
+            const bool useAllProcessors = true;
+
             if (loadFromFile) {
                 string json = File.ReadAllText(filePath);
                 nn.FromJson(json);
             } else {
-                nn.AddLayer(imgWidth * imgHeight);  // One input per pixel
-                nn.AddLayer(200, true, ActivationFunctionEnum.TanH, 0.01f);
-                nn.AddLayer(10, true, ActivationFunctionEnum.TanH, 0.01f);  // Digits 0 - 9
+                Layer layer;
+                layer = nn.AddLayer(imgWidth * imgHeight);  // One input per pixel
+                layer = nn.AddLayer(50, true, ActivationFunctionEnum.TanH, 0.01f);
+                layer.UseAllProcessors = useAllProcessors;
+                layer = nn.AddLayer(10, true, ActivationFunctionEnum.TanH, 0.01f);  // Digits 0 - 9
+                layer.UseAllProcessors = useAllProcessors;
             }
 
             successes.Clear();

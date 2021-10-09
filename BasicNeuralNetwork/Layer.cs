@@ -25,6 +25,10 @@ namespace BasicNeuralNetwork {
         /// </summary>
         public float LearningRate = 0.01f;
 
+        public int ProcessorCores = Environment.ProcessorCount;
+
+        public bool UseAllProcessors = false;
+
         /// <summary>
         /// How to transform the summed-up scalar output value of each neuron during feed forward
         /// </summary>
@@ -60,7 +64,9 @@ namespace BasicNeuralNetwork {
         /// Feed-forward algorithm for this layer
         /// </summary>
         public void FeedForward() {
-            foreach (var neuron in Neurons) {
+
+            ForAllNeurons(n => {
+                var neuron = Neurons[n];
 
                 // Sum up the previous layer's outputs multiplied by this neuron's weights for each
                 float sigma = 0;
@@ -72,7 +78,7 @@ namespace BasicNeuralNetwork {
                 // Shape the output using the activation function
                 float output = ActivationFn(sigma);
                 neuron.Output = output;
-            }
+            });
 
             // The Softmax activation function requires extra processing of aggregates
             if (ActivationFunction == ActivationFunctionEnum.Softmax) {
@@ -83,13 +89,15 @@ namespace BasicNeuralNetwork {
                 }
                 // Compute the scale
                 float scale = 0;
-                foreach (var neuron in Neurons) {
+                ForAllNeurons(n => {
+                    var neuron = Neurons[n];
                     scale += (float)Math.Exp(neuron.Output - max);
-                }
+                });
                 // Shift and scale the outputs
-                foreach (var neuron in Neurons) {
+                ForAllNeurons(n => {
+                    var neuron = Neurons[n];
                     neuron.Output = (float)Math.Exp(neuron.Output - max) / scale;
-                }
+                });
             }
         }
 
@@ -98,90 +106,50 @@ namespace BasicNeuralNetwork {
         /// </summary>
         public void Backpropagate(float[] trainingOutputs) {
 
-            int processorCores = Environment.ProcessorCount;
-            bool useParallel = NeuronCount > processorCores * 10;
-            //useParallel = false;
-
             // Compute error for each neuron
-            if (useParallel) {
-                int partitionSize = (int)Math.Ceiling((double)NeuronCount / processorCores);
-                int partitions = Math.Min(processorCores, NeuronCount);  // Just in case there are fewer neurons than processors
-                Parallel.For(0, partitions, p => {
-                    for (
-                        int n = p * partitionSize;
-                        n < (p + 1) * partitionSize && n < NeuronCount;
-                        n++
-                    ) {
-                        BackpropagateComputeErrors(n, trainingOutputs);
+            ForAllNeurons(n => {
+                var neuron = Neurons[n];
+                float output = neuron.Output;
+
+                if (NextLayer == null) {  // Output layer
+                    var error = trainingOutputs[n] - output;
+                    neuron.Error = error * ActivationFnDerivative(output);
+                } else {  // Hidden layer
+                    float error = 0;
+                    for (int o = 0; o < NextLayer.NeuronCount; o++) {
+                        var nextNeuron = NextLayer.Neurons[o];
+                        var iw = nextNeuron.InputWeights[n];
+                        error += nextNeuron.Error * iw;
+
+                        // TODO: Implement input weight regularization
+                        /*
+                        // Calculate L1 (lasso) for regularization
+                        l1Penalty += (iw < 0 ? -iw : iw);  // Absolute value of the weight
+
+                        // Calculate L2 (weight decay) for regularization
+                        l1Penalty += iw * iw;  // Weight squared
+                        */
+
                     }
-                });
-            } else {
-                for (int n = 0; n < NeuronCount; n++) {
-                    BackpropagateComputeErrors(n, trainingOutputs);
+                    neuron.Error = error * ActivationFnDerivative(output);
                 }
-            }
+            });
 
             // Adjust weights of each neuron
-            if (useParallel) {
-                int partitionSize = (int)Math.Ceiling((double)NeuronCount / processorCores);
-                int partitions = Math.Min(processorCores, NeuronCount);  // Just in case there are fewer neurons than processors
-                Parallel.For(0, partitions, p => {
-                    for (
-                        int n = p * partitionSize;
-                        n < (p + 1) * partitionSize && n < NeuronCount;
-                        n++
-                    ) {
-                        BackpropagateAdjustWeights(n);
-                    }
-                });
-            } else {
-                for (int n = 0; n < NeuronCount; n++) {
-                    BackpropagateAdjustWeights(n);
+            ForAllNeurons(n => {
+                var neuron = Neurons[n];
+
+                // Update this neuron's bias
+                var gradient = neuron.Error;
+                neuron.Bias += gradient * LearningRate;
+
+                // Update this neuron's input weights
+                for (int i = 0; i < PreviousLayer.NeuronCount; i++) {
+                    gradient = neuron.Error * PreviousLayer.Neurons[i].Output;
+                    neuron.InputWeights[i] += gradient * LearningRate;
                 }
-            }
+            });
 
-        }
-
-        private void BackpropagateComputeErrors(int n, float[] trainingOutputs) {
-            var neuron = Neurons[n];
-            float output = neuron.Output;
-
-            if (NextLayer == null) {  // Output layer
-                var error = trainingOutputs[n] - output;
-                neuron.Error = error * ActivationFnDerivative(output);
-            } else {  // Hidden layer
-                float error = 0;
-                for (int o = 0; o < NextLayer.NeuronCount; o++) {
-                    var nextNeuron = NextLayer.Neurons[o];
-                    var iw = nextNeuron.InputWeights[n];
-                    error += nextNeuron.Error * iw;
-
-                    // TODO: Implement input weight regularization
-                    /*
-                    // Calculate L1 (lasso) for regularization
-                    l1Penalty += (iw < 0 ? -iw : iw);  // Absolute value of the weight
-
-                    // Calculate L2 (weight decay) for regularization
-                    l1Penalty += iw * iw;  // Weight squared
-                    */
-
-                }
-                neuron.Error = error * ActivationFnDerivative(output);
-            }
-        }
-
-        private void BackpropagateAdjustWeights(int n) {
-            var neuron = Neurons[n];
-
-            // Update this neuron's bias
-            var gradient = neuron.Error;
-            neuron.Bias += gradient * LearningRate;
-
-            // Update this neuron's input weights
-            for (int i = 0; i < PreviousLayer.NeuronCount; i++) {
-                gradient = neuron.Error * PreviousLayer.Neurons[i].Output;
-                neuron.InputWeights[i] += gradient * LearningRate;
-            }
         }
 
         private float ActivationFn(float value) {
@@ -218,6 +186,29 @@ namespace BasicNeuralNetwork {
                     return (1 - value) * value;
             }
             return 0;
+        }
+
+        /// <summary>
+        /// Encapsulates optional multiprocessor partitioning while looping from 0 to .NeuronCount
+        /// </summary>
+        private void ForAllNeurons(Action<int> body) {
+            if (UseAllProcessors) {
+                int partitionSize = (int)Math.Ceiling((double)NeuronCount / ProcessorCores);
+                int partitions = Math.Min(ProcessorCores, NeuronCount);  // Just in case there are fewer neurons than processors
+                Parallel.For(0, partitions, new ParallelOptions { MaxDegreeOfParallelism = ProcessorCores }, p => {
+                    for (
+                        int n = p * partitionSize;
+                        n < (p + 1) * partitionSize && n < NeuronCount;
+                        n++
+                    ) {
+                        body.Invoke(n);
+                    }
+                });
+            } else {
+                for (int n = 0; n < NeuronCount; n++) {
+                    body.Invoke(n);
+                }
+            }
         }
 
         /// <summary>
