@@ -50,10 +50,10 @@ namespace BasicNeuralNetwork {
                 Layer layer;
                 layer = nn.AddLayer(imgWidth * imgHeight);  // One input per pixel
 
-                layer = nn.AddLayer(50, true, ActivationFunctionEnum.TanH, 0.01f);
+                layer = nn.AddLayer(100, true, ActivationFunctionEnum.Sigmoid, 0.1f);
                 layer.UseAllProcessors = useAllProcessors;
 
-                layer = nn.AddLayer(10, true, ActivationFunctionEnum.TanH, 0.01f);  // Digits 0 - 9
+                layer = nn.AddLayer(10, true, ActivationFunctionEnum.Sigmoid, 0.1f);  // Digits 0 - 9
                 layer.UseAllProcessors = useAllProcessors;
 
             }

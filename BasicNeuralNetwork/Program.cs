@@ -5,6 +5,8 @@ using System.IO;
 namespace BasicNeuralNetwork {
     class Program {
 
+        static string dataDirectory = @"G:\My Drive\Ventures\MsDev\BasicNeuralNetwork\Data\";
+
         static void Main(string[] args) {
 
             //RunXorDemo();
@@ -95,7 +97,7 @@ namespace BasicNeuralNetwork {
             NeuralNetwork nn;
 
             const bool loadFromFile = true;
-            var filePath = DataDirectory() + "Character Neural Network.json";
+            var filePath = dataDirectory + "Character Neural Network.json";
 
             if (loadFromFile && File.Exists(filePath)) {
                 var json = File.ReadAllText(filePath);
@@ -293,11 +295,11 @@ namespace BasicNeuralNetwork {
         #region Digit image recognition demo
 
 
-        static string digitsDemoFilePath = DataDirectory() + "MNIST digits neural network.json";
+        static string digitsDemoFilePath = dataDirectory + "MNIST digits neural network.json";
 
         static void RunDigitsTraining() {
             var mnist = new MnistDigits();
-            mnist.LoadImage(DataDirectory() + "Mnist images/Training images.png");
+            mnist.LoadImage(dataDirectory + "Mnist images/Training images.png");
 
             bool loadFromFile = false;
 
@@ -385,16 +387,16 @@ namespace BasicNeuralNetwork {
         static void ConvertDigitsImages() {
             var mnist = new MnistDigits();
             mnist.ConvertImage(
-                DataDirectory() + "Mnist images/train-images.idx3-ubyte",
-                DataDirectory() + "Mnist images/train-labels.idx1-ubyte",
-                DataDirectory() + "Mnist images/Training images.png",
+                dataDirectory + "Mnist images/train-images.idx3-ubyte",
+                dataDirectory + "Mnist images/train-labels.idx1-ubyte",
+                dataDirectory + "Mnist images/Training images.png",
                 60000,
                 300
             );
             mnist.ConvertImage(
-                DataDirectory() + "Mnist images/t10k-images.idx3-ubyte",
-                DataDirectory() + "Mnist images/t10k-labels.idx1-ubyte",
-                DataDirectory() + "Mnist images/Test images.png",
+                dataDirectory + "Mnist images/t10k-images.idx3-ubyte",
+                dataDirectory + "Mnist images/t10k-labels.idx1-ubyte",
+                dataDirectory + "Mnist images/Test images.png",
                 10000,
                 100
             );
@@ -404,7 +406,7 @@ namespace BasicNeuralNetwork {
             Console.WriteLine("Testing against test image set...");
 
             var mnistTest = new MnistDigits();
-            mnistTest.LoadImage(DataDirectory() + "Mnist images/Test images.png");
+            mnistTest.LoadImage(dataDirectory + "Mnist images/Test images.png");
             mnistTest.nn = new NeuralNetwork();
 
             string json = File.ReadAllText(digitsDemoFilePath);
@@ -420,15 +422,6 @@ namespace BasicNeuralNetwork {
 
         #endregion
 
-
-        static string DataDirectory() {
-            string path = Environment.CurrentDirectory + "/Data/";
-            path = @"G:\My Drive\Ventures\MsDev\BasicNeuralNetwork\Data\";
-            if (!Directory.Exists(path)) {
-                Directory.CreateDirectory(path);
-            }
-            return path;
-        }
 
         static string RenderPercent(float percent) {
             float value = percent / 10f;

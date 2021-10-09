@@ -361,5 +361,3 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/Data/Character Neural Network.json
-/Data/MNIST digits neural network.json
