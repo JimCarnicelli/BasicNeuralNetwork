@@ -9,6 +9,8 @@ namespace BasicNeuralNetwork {
 
             //RunXorDemo();
             //RunAsciiDemo();
+
+            //ConvertDigitsImages();
             RunDigitsTraining();
             //RunDigitsTest();
 
@@ -377,7 +379,11 @@ namespace BasicNeuralNetwork {
                 RunDigitsTest();
             }
 
-            /*
+            mnist.Dispose();
+        }
+
+        static void ConvertDigitsImages() {
+            var mnist = new MnistDigits();
             mnist.ConvertImage(
                 DataDirectory() + "Mnist images/train-images.idx3-ubyte",
                 DataDirectory() + "Mnist images/train-labels.idx1-ubyte",
@@ -392,14 +398,13 @@ namespace BasicNeuralNetwork {
                 10000,
                 100
             );
-            */
-
-            mnist.Dispose();
         }
 
         static void RunDigitsTest() {
+            Console.WriteLine("Testing against test image set...");
+
             var mnistTest = new MnistDigits();
-            mnistTest.LoadImage("Mnist images/Test images.png");
+            mnistTest.LoadImage(DataDirectory() + "Mnist images/Test images.png");
             mnistTest.nn = new NeuralNetwork();
 
             string json = File.ReadAllText(digitsDemoFilePath);

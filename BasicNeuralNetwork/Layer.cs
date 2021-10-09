@@ -25,9 +25,15 @@ namespace BasicNeuralNetwork {
         /// </summary>
         public float LearningRate = 0.01f;
 
-        public int ProcessorCores = Environment.ProcessorCount;
-
+        /// <summary>
+        /// If true then attempt to improve performance by spreading expensive computation out across all available processors
+        /// </summary>
         public bool UseAllProcessors = false;
+
+        /// <summary>
+        /// How many processors shall we attemp to employ when UseAllProcessors is true?
+        /// </summary>
+        public int ProcessorsToUse = Environment.ProcessorCount;
 
         /// <summary>
         /// How to transform the summed-up scalar output value of each neuron during feed forward
@@ -120,16 +126,6 @@ namespace BasicNeuralNetwork {
                         var nextNeuron = NextLayer.Neurons[o];
                         var iw = nextNeuron.InputWeights[n];
                         error += nextNeuron.Error * iw;
-
-                        // TODO: Implement input weight regularization
-                        /*
-                        // Calculate L1 (lasso) for regularization
-                        l1Penalty += (iw < 0 ? -iw : iw);  // Absolute value of the weight
-
-                        // Calculate L2 (weight decay) for regularization
-                        l1Penalty += iw * iw;  // Weight squared
-                        */
-
                     }
                     neuron.Error = error * ActivationFnDerivative(output);
                 }
@@ -189,21 +185,25 @@ namespace BasicNeuralNetwork {
         }
 
         /// <summary>
-        /// Encapsulates optional multiprocessor partitioning while looping from 0 to .NeuronCount
+        /// Encapsulates optional multiprocessor job partitioning while looping from 0 to .NeuronCount
         /// </summary>
         private void ForAllNeurons(Action<int> body) {
             if (UseAllProcessors) {
-                int partitionSize = (int)Math.Ceiling((double)NeuronCount / ProcessorCores);
-                int partitions = Math.Min(ProcessorCores, NeuronCount);  // Just in case there are fewer neurons than processors
-                Parallel.For(0, partitions, new ParallelOptions { MaxDegreeOfParallelism = ProcessorCores }, p => {
-                    for (
-                        int n = p * partitionSize;
-                        n < (p + 1) * partitionSize && n < NeuronCount;
-                        n++
-                    ) {
-                        body.Invoke(n);
+                int partitionSize = (int)Math.Ceiling((double)NeuronCount / ProcessorsToUse);
+                int partitions = Math.Min(ProcessorsToUse, NeuronCount);  // Just in case there are fewer neurons than processors
+                Parallel.For(
+                    0,
+                    partitions,
+                    new ParallelOptions { MaxDegreeOfParallelism = ProcessorsToUse }, p => {
+                        for (
+                            int n = p * partitionSize;
+                            n < (p + 1) * partitionSize && n < NeuronCount;
+                            n++
+                        ) {
+                            body.Invoke(n);
+                        }
                     }
-                });
+                );
             } else {
                 for (int n = 0; n < NeuronCount; n++) {
                     body.Invoke(n);
