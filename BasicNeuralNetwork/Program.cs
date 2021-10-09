@@ -128,8 +128,6 @@ namespace BasicNeuralNetwork {
                 var success = predictedCat == targetCat;
                 recentTestResults.Add(success);
                 if (keepTraining) nn.Backpropagate();
-                //var l1Rate = nn.CalculateWeightL1() / nn.CountInputWeights();
-                //var l2Rate = nn.CalculateWeightL2() / nn.CountInputWeights();
 
                 float percentSuccesses = 0;
                 if (recentTestResults.Count > 5000) {
@@ -198,13 +196,7 @@ namespace BasicNeuralNetwork {
                     Console.WriteLine(
                         i.ToString("0") + "   " +
                         RenderPercent(percentSuccesses) + " " +
-                        percentSuccesses.ToString("0.00") + "%   " +
-                        //l2Rate.ToString("0.00") + "  " +
-                        //l2Rate.ToString("0.00") + "  "
-                    /*charCode + "  " +
-                    predictedCat + "  " +
-                    (success ? "" : "---- WRONG ----")*/
-                        ""
+                        percentSuccesses.ToString("0.00") + "%"
                     );
                 }
 
